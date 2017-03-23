@@ -1,0 +1,32 @@
+
+.cc-svg .radial-linebar {
+	.axis {
+		.radius-tick {
+			fill: none;
+			stroke-width: 1px;
+			stroke: #ccc;
+		}
+		.x-tick {
+			path {
+				fill: none;
+				stroke-width: 1px;
+				stroke: #ccc;
+			}
+		}
+		.radius-tick-text {
+			font-size: 9px;
+			font-weight: bold;
+			fill: #999;
+		}
+	}
+	.circle {
+		fill: none;
+		stroke-width: 1px;
+		stroke: #ccc;
+	}
+	.line {
+		fill: none;
+		stroke-width: 2px;
+		stroke: #23a;
+	}
+}

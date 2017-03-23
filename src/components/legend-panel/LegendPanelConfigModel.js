@@ -48,6 +48,9 @@ export default class LegendPanelConfigModel extends ContrailChartsConfigModel {
     }
 
     data.attributes = _.map(accessors, accessor => {
+      if (_.isUndefined(accessor.enabled)) {
+        accessor.enabled = true
+      }
       return {
         accessor: accessor.accessor,
         axis: accessor.axis,

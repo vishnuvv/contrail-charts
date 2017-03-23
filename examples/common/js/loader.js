@@ -18,6 +18,7 @@ import shapes from '../../bubble-chart/multiple-shapes'
 // Radial
 import pieChart from '../../radial-chart/pie'
 import dendrogramChart from '../../radial-chart/dendrogram'
+import radialLinebar from '../../radial-chart/linebar'
 import areaBasic from '../../area-chart/basic'
 import navigation from '../../grouped-chart/navigation/index.js'
 import twoLineBarOnePieNav from '../../grouped-chart/linebar-pie-nav/index.js'
@@ -70,7 +71,10 @@ const allExamples = {
     },
     'Dendrogram': {
       view: dendrogramChart,
-    }
+    },
+    'Linebar': {
+      view: radialLinebar
+     }
   },
   'area': {
     'Basic': {

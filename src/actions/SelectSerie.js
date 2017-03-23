@@ -45,5 +45,14 @@ export default class SelectSerie extends Action {
         radialDendrogram.config.set('drillDownLevel', drillDownLevel)
       }
     })
+
+    _.each(chart.getComponentsByType('RadialLinebar'), (radialLinebar) => {
+      const plot = radialLinebar.config.get('plot')
+      const accessor = _.find(plot.r, (a) => a.accessor === accessorName)
+      if (accessor) {
+        accessor.enabled = isSelected
+        radialLinebar.config.trigger('change', radialLinebar.config)
+      }
+    })
   }
 }
