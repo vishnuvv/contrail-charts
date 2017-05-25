@@ -6,6 +6,7 @@ import * as d3Hierarchy from 'd3-hierarchy'
 import * as d3Scale from 'd3-scale'
 import * as d3Selection from 'd3-selection'
 import * as d3Shape from 'd3-shape'
+import * as d3Chord from 'd3-chord'
 import ContrailChartsView from 'contrail-charts-view'
 import actionman from 'core/Actionman'
 import './radial-dendrogram.scss'
@@ -444,10 +445,54 @@ export default class RadialDendrogramView extends ContrailChartsView {
         .attr('class', (d) => 'ribbon' + ((d.active) ? ' active' : ''))
         .classed(this.selectorClass('interactive'), this.config.hasAction('link'))
         .attr('d', (d) => {
+          // var lastPoint = d.outerPoints[1];
+          // var controlPoint = d.outerPoints[1] = [0,0];
+
+          /*var startPoint = [d.outerPoints[0][1] * Math.cos(d.outerPoints[0][0]),d.outerPoints[0][1] * Math.sin(d.outerPoints[0][0])];
+          var endPoint = [d.outerPoints[1][1] * Math.cos(d.outerPoints[1][0]),d.outerPoints[1][1] * Math.sin(d.outerPoints[1][0])];
+          var midPoint = [(startPoint[0] + endPoint[0])/2, (startPoint[1] + endPoint[1])/2];
+          //Convert midPoint form cartesian to Polar
+          var midPointInPolar = [Math.atan2(midPoint[1],midPoint[0]),Math.sqrt(Math.pow(midPoint[0],2) + Math.pow(midPoint[1],2)*.9)];*/
+          /*function getMidPoint(points) {
+            //Converting to cartesian
+            var out1 = { radians: points[0][0]/180 * Math.PI, radius: points[0][1]},
+                out2 = { radians: points[1][0]/180 * Math.PI, radius: points[1][1]};
+
+            var [x1,y1] = [out1.radius * Math.cos(out1.radians),out1.radius * Math.sin(out1.radians)];
+            var [x2,y2] = [out1.radius * Math.cos(out2.radians),out1.radius * Math.sin(out2.radians)];
+            var midPoint = [(x1 + x2)/2, (y1 + y2)/2];
+            //Convert midPoint form cartesian to Polar
+            var midPointInPolar = [Math.atan2(midPoint[1],midPoint[0])*57.29,Math.sqrt(Math.pow(midPoint[0],2) + Math.pow(midPoint[1],2)*.8)];
+            return midPointInPolar;
+          }*/
+          // d.outerPoints.splice(1,0,getMidPoint(d.outerPoints));
+          // d.innerPoints.splice(1,0,getMidPoint(d.innerPoints));
+          if(d.outerPoints.length == 2 && d.innerPoints.length == 2) {
+            var out1 = { radians: d.outerPoints[0][0]/180 * Math.PI, radius: d.outerPoints[0][1]},
+                    out2 = { radians: d.outerPoints[1][0]/180 * Math.PI, radius: d.outerPoints[1][1]};
+            var in1 = { radians: d.innerPoints[0][0]/180 * Math.PI, radius: d.innerPoints[0][1]},
+                    in2 = { radians: d.innerPoints[1][0]/180 * Math.PI, radius: d.innerPoints[1][1]};
+
+            var ribbon = d3v4.ribbon().radius(out1.radius);
+            var radians = [out1.radians,in1.radians,out2.radians,in2.radians];
+            radians.sort();
+            return ribbon({
+                source: {startAngle: radians[0],endAngle:radians[1]},
+                target: {startAngle: radians[2],endAngle:radians[3]}
+            });
+            return ribbon({
+                source: {startAngle: out1.radians,endAngle:in1.radians},
+                target: {startAngle: Math.min(out2.radians,in2.radians),endAngle:Math.max(out2.radians,in2.radians)}
+            });
+          }
+
           const outerPath = radialLine(d.outerPoints)
           const innerPath = radialLine(d.innerPoints)
           const innerStitch = 'A' + d.outerPoints[0][1] + ' ' + d.outerPoints[0][1] + ' 0 0 0 '
-          const endingStitch = 'A' + d.outerPoints[0][1] + ' ' + d.outerPoints[0][1] + ' 0 0 0 ' + radialLine([d.outerPoints[0]]).substr(1)
+          const endingStitch = 'A' + d.outerPoints[0][1] + ' ' + d.outerPoints[0][1] + ' 0 0 0 ' +  radialLine([d.outerPoints[0]]).substr(1)
+          // return outerPath
+
+          // return innerPath + outerPath
           return outerPath + innerStitch + innerPath.substr(1) + endingStitch
         })
       svgLinks.exit().remove()
