@@ -44,6 +44,9 @@ export default class RadialDendrogramView extends ContrailChartsView {
       'dblclick link': '_onEvent',
       'mousemove node': '_onMousemove',
       'mouseout node': '_onMouseout',
+      'click ribbon': '_onClickLink',
+      'mousemove ribbon': '_onMousemoveLink',
+      'mouseout ribbon': '_onMouseoutLink'
     })
   }
 
@@ -127,6 +130,7 @@ export default class RadialDendrogramView extends ContrailChartsView {
           let children = this.rootNode.children
           let node = null
           const namePath = []
+          let currLeaf = leaf
           _.each(leaf.names, (name, depth) => {
             this.maxDepth = Math.max(this.maxDepth, depth + 1)
             if (depth >= this.params.drillDownLevel) {
@@ -137,6 +141,7 @@ export default class RadialDendrogramView extends ContrailChartsView {
             if (!node) {
               node = {
                 name: name,
+                labelAppend:currLeaf.labelAppend,
                 namePath: namePath.slice(0),
                 children: [],
                 level: depth + 1
@@ -274,8 +279,9 @@ export default class RadialDendrogramView extends ContrailChartsView {
   * - inner edge of the source leaf arc.
   */
   _prepareRibbons () {
-    this.ribbons = []
-    _.each(this.links, (link) => {
+    let ribbons =  this._ribbons
+    this._ribbons = []
+    _.each(this._links, (link) => {
       const src = link[0]
       const dst = link[link.length - 1]
       const srcAncestors = src.ancestors()
@@ -380,7 +386,19 @@ export default class RadialDendrogramView extends ContrailChartsView {
         id: src.data.linkId
       })
     })
-    // console.log('ribbons: ', this.ribbons)
+    if(ribbons) {
+      let selectedRibbon = _.filter(ribbons, function(ribbon) {
+        return ribbon.selected;
+      });
+      if(selectedRibbon && selectedRibbon.length > 0) {
+        _.filter(this._ribbons, function(ribbon) {
+          if(ribbon.id == selectedRibbon[0].id) {
+            ribbon.selected = true;
+            ribbon.active = true;
+          }
+        });
+      }
+    }
   }
 
   _prepareArcs () {
@@ -392,6 +410,9 @@ export default class RadialDendrogramView extends ContrailChartsView {
       // Estimate arc length and wheather the label will fit (default letter width is assumed to be 5px).
       n.arcLength = 6 * (n.y - this.params.arcLabelYOffset) * (n.angleRange[1] - n.angleRange[0]) / 360
       n.label = '' + n.data.namePath[n.data.namePath.length - 1]
+      if(n.depth == 1 && n.data.labelAppend){
+        n.label += '-'+n.data.labelAppend;
+      }
       let labelArcLengthDiff
       n.labelFits = (labelArcLengthDiff = (this.config.get('arcLabelLetterWidth') * n.label.length - n.arcLength)) < 0
       if(!n.labelFits){
@@ -578,8 +599,8 @@ export default class RadialDendrogramView extends ContrailChartsView {
 
   _onMousemove (d, el) {
     const leaves = d.leaves()
-    _.each(this.ribbons, (ribbon) => {
-      ribbon.active = Boolean(_.find(leaves, (leaf) => leaf.data.linkId === ribbon.id))
+    _.each(this._ribbons, (ribbon) => {
+      ribbon.active = (Boolean(_.find(leaves, (leaf) => leaf.data.linkId === ribbon.id))) ? true : ribbon.selected
     })
     this._render()
     const [left, top] = d3Selection.mouse(this._container)
@@ -587,8 +608,10 @@ export default class RadialDendrogramView extends ContrailChartsView {
   }
 
   _onMouseout (d, el) {
-    _.each(this.ribbons, (ribbon) => {
-      ribbon.active = false
+    _.each(this._ribbons, (ribbon) => {
+      if(!ribbon.selected) {
+        ribbon.active = false
+      }
     })
     this._render()
     actionman.fire('HideComponent', this.config.get('tooltip'))
@@ -612,5 +635,24 @@ export default class RadialDendrogramView extends ContrailChartsView {
     });
     el.classList.remove(this.selectorClass('active'))
     super._onEvent(d, el, e)
+  }
+
+  _onClickLink (d, el, e) {
+    if(this.config.attributes && this.config.attributes.showLinkInfo
+      && typeof this.config.attributes.showLinkInfo == 'function') {
+        this.config.attributes.showLinkInfo(d, el, e,this);
+    }
+  }
+
+  _onMousemoveLink (d, el, e) {
+    if(this.config.attributes && this.config.attributes.showLinkTooltip){
+      const [left, top] = d3Selection.mouse(this._container)
+      const tooltipConfig = {left, top, container: this._container}
+      actionman.fire('ToggleVisibility', this.config.get('tooltip'), true, d.data, tooltipConfig)
+    }
+  }
+
+  _onMouseoutLink (d, el, e) {
+    actionman.fire('ToggleVisibility', this.config.get('tooltip'), false)
   }
 }
