@@ -279,9 +279,9 @@ export default class RadialDendrogramView extends ContrailChartsView {
   * - inner edge of the source leaf arc.
   */
   _prepareRibbons () {
-    let ribbons =  this._ribbons
-    this._ribbons = []
-    _.each(this._links, (link) => {
+    let ribbons =  this.ribbons
+    this.ribbons = []
+    _.each(this.links, (link) => {
       const src = link[0]
       const dst = link[link.length - 1]
       const srcAncestors = src.ancestors()
@@ -391,7 +391,7 @@ export default class RadialDendrogramView extends ContrailChartsView {
         return ribbon.selected;
       });
       if(selectedRibbon && selectedRibbon.length > 0) {
-        _.filter(this._ribbons, function(ribbon) {
+        _.filter(this.ribbons, function(ribbon) {
           if(ribbon.id == selectedRibbon[0].id) {
             ribbon.selected = true;
             ribbon.active = true;
@@ -514,6 +514,19 @@ export default class RadialDendrogramView extends ContrailChartsView {
             });
           }
 
+          //Need to try with simple sample for debugging 
+          //Looks causing issues as it's using elliptical arc
+          /*
+          d.outerPoints = _.map(d.outerPoints,function(val,idx) {
+            var diff = Math.abs(val[0],val[1])*.1;
+            return [val[0]+diff,val[1]-diff];
+          });
+          d.innerPoints = _.map(d.innerPoints,function(val,idx) {
+            var diff = Math.abs(val[0],val[1])*.1;
+            return [val[0]+diff,val[1]-diff];
+          });
+          */
+
           const outerPath = radialLine(d.outerPoints)
           const innerPath = radialLine(d.innerPoints)
           const innerStitch = 'A' + d.outerPoints[0][1] + ' ' + d.outerPoints[0][1] + ' 0 0 0 '
@@ -579,7 +592,7 @@ export default class RadialDendrogramView extends ContrailChartsView {
         .attr('class', (d) => 'arc arc-' + d.depth)
         .attr('d', arcEnter)
         .merge(svgArcs).transition().ease(this.config.get('ease')).duration(this.params.duration)
-        .style('fill', d => this.config.getColor([], this.config.get('levels')[d.depth - 1]))
+        .style('fill', d => this.config.getColor([], this.config.get('levels')[d.depth - 1],d.data))
         .attr('d', arc)
       svgArcs.exit().transition().ease(this.config.get('ease')).duration(this.params.duration)
         .attr('d', arcEnter)
@@ -599,7 +612,7 @@ export default class RadialDendrogramView extends ContrailChartsView {
 
   _onMousemove (d, el) {
     const leaves = d.leaves()
-    _.each(this._ribbons, (ribbon) => {
+    _.each(this.ribbons, (ribbon) => {
       ribbon.active = (Boolean(_.find(leaves, (leaf) => leaf.data.linkId === ribbon.id))) ? true : ribbon.selected
     })
     this._render()
@@ -608,7 +621,7 @@ export default class RadialDendrogramView extends ContrailChartsView {
   }
 
   _onMouseout (d, el) {
-    _.each(this._ribbons, (ribbon) => {
+    _.each(this.ribbons, (ribbon) => {
       if(!ribbon.selected) {
         ribbon.active = false
       }

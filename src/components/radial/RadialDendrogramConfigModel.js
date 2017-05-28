@@ -66,8 +66,8 @@ export default class RadialDendrogramConfigModel extends ContrailChartsConfigMod
     super.set(ColoredChart.set(...args))
   }
 
-  getColor (data, accessor) {
-    return accessor.color || this.attributes.colorScale(accessor.level)
+  getColor (data, accessor, item) {
+    return accessor.color || this.attributes.colorScale(item)
   }
 
   getAccessors () {
