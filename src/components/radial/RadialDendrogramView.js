@@ -476,9 +476,12 @@ export default class RadialDendrogramView extends ContrailChartsView {
             var ribbon = d3v4.ribbon().radius(out1.radius);
             var radians = [out1.radians,in1.radians,out2.radians,in2.radians];
             radians.sort();
+            //Adding 10% buffer
+            var startWidth = Math.abs(radians[0]-radians[1])*.1,
+              endWidth = Math.abs(radians[2]-radians[3])*.1;
             return ribbon({
-                source: {startAngle: radians[0],endAngle:radians[1]},
-                target: {startAngle: radians[2],endAngle:radians[3]}
+                source: {startAngle: radians[0]+startWidth,endAngle:radians[1]-startWidth},
+                target: {startAngle: radians[2]+endWidth,endAngle:radians[3]-endWidth}
             });
             return ribbon({
                 source: {startAngle: out1.radians,endAngle:in1.radians},
@@ -587,13 +590,21 @@ export default class RadialDendrogramView extends ContrailChartsView {
   }
 
   _onClickNode (d, el, e) {
-    if (d.depth < this.maxDepth && d.depth === this.params.drillDownLevel) {
+    /*if (d.depth < this.maxDepth && d.depth === this.params.drillDownLevel) {
       // Expand
       this.config.set('drillDownLevel', this.params.drillDownLevel + 1)
     } else if (d.depth < this.params.drillDownLevel) {
       // Collapse
       this.config.set('drillDownLevel', this.params.drillDownLevel - 1)
     }
+    this.config.set('drillDownLevel', this.params.drillDownLevel - 1)*/
+    var levels = 2;
+    //If clicked on 2nd level arc,collapse to 1st level
+    if(d.depth == 2 || d.height == 2)
+        levels = 1;
+    this.config.attributes.updateChart({
+        levels: levels
+    });
     el.classList.remove(this.selectorClass('active'))
     super._onEvent(d, el, e)
   }
