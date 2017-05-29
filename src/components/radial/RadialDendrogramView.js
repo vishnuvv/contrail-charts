@@ -44,9 +44,9 @@ export default class RadialDendrogramView extends ContrailChartsView {
       'dblclick link': '_onEvent',
       'mousemove node': '_onMousemove',
       'mouseout node': '_onMouseout',
-      'click ribbon': '_onClickLink',
-      'mousemove ribbon': '_onMousemoveLink',
-      'mouseout ribbon': '_onMouseoutLink'
+      'click link': '_onClickLink',
+      'mousemove link': '_onMousemoveLink',
+      'mouseout link': '_onMouseoutLink'
     })
   }
 
@@ -108,11 +108,22 @@ export default class RadialDendrogramView extends ContrailChartsView {
       // Check if we havent already created a node pair (link) with the same id.
       const foundLeafNode = _.find(leafNodes, (leafNode) => {
         let found = false
+        //If there already exists a leaf node matching the src & dst
         if (leafNode.id === leafs[0].id) {
           if (leafNode.otherNode.id === leafs[1].id) {
             found = true
           }
         }
+        // if (leafNode.id === leafs[1].id) {
+        //   if (leafNode.otherNode.id === leafs[0].id) {
+        //     found = true
+        //   }
+        // }
+        return found
+      })
+      const foundDstNode = _.find(leafNodes, (leafNode) => {
+        let found = false
+        //If there already exists a leaf node matching the src & dst
         if (leafNode.id === leafs[1].id) {
           if (leafNode.otherNode.id === leafs[0].id) {
             found = true
@@ -121,9 +132,13 @@ export default class RadialDendrogramView extends ContrailChartsView {
         return found
       })
       if (foundLeafNode) {
+        foundLeafNode.dataChildren.push(d);
         foundLeafNode.value += (foundLeafNode.id === leafs[0].id) ? leafs[0].value : leafs[1].value
         foundLeafNode.otherNode.value += (foundLeafNode.otherNode.id === leafs[0].id) ? leafs[0].value : leafs[1].value
         this.valueSum += leafs[0].value + leafs[1].value
+        if(foundDstNode) {
+            foundDstNode.dataChildren.push(d);
+        }
       } else {
         _.each(leafs, (leaf, i) => {
           // leaf node contains an array of 'names' (ie. the path from root to leaf) and a 'value'
@@ -157,6 +172,7 @@ export default class RadialDendrogramView extends ContrailChartsView {
             value: leaf.value,
             type: (i === 0) ? 'src' : 'dst',
             linkId: leafs[0].id + '-' + leafs[1].id,
+            dataChildren : [d]
           }
           node.children.push(leafNode)
           this.valueSum += leafNode.value
@@ -383,7 +399,8 @@ export default class RadialDendrogramView extends ContrailChartsView {
       this.ribbons.push({
         outerPoints: outerPoints,
         innerPoints: innerPoints,
-        id: src.data.linkId
+        id: src.data.linkId,
+        link: [src,dst]
       })
     })
     if(ribbons) {
