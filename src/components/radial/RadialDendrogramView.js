@@ -157,6 +157,7 @@ export default class RadialDendrogramView extends ContrailChartsView {
               node = {
                 name: name,
                 labelAppend:currLeaf.labelAppend,
+                type: currLeaf.type,
                 namePath: namePath.slice(0),
                 children: [],
                 level: depth + 1
@@ -567,6 +568,7 @@ export default class RadialDendrogramView extends ContrailChartsView {
       svgArcLabelsEnter
         .append('textPath')
         .attr('xlink:href', (d) => '#' + d.data.namePath.join('-'))
+        .attr('class', function (d) { return (d.data.level == 1 ? d.data.type : '')})
       let svgArcLabelsEdit = svgArcLabelsEnter.merge(svgArcLabels).transition().ease(this.config.get('ease')).duration(this.params.duration)
         .attr('x', this.params.arcLabelXOffset)
         .attr('dy', this.params.arcLabelYOffset)
