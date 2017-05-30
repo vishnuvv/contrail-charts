@@ -690,9 +690,8 @@ export default class RadialDendrogramView extends ContrailChartsView {
 
   _onMousemoveLink (d, el, e) {
     if(this.config.attributes && this.config.attributes.showLinkTooltip){
-      const [left, top] = d3Selection.mouse(this._container)
-      const tooltipConfig = {left, top, container: this._container}
-      actionman.fire('ToggleVisibility', this.config.get('tooltip'), true, d.data, tooltipConfig)
+    const [left, top] = d3Selection.mouse(this._container)
+    actionman.fire('ShowComponent', this.config.get('tooltip'), {left, top}, d)
     }
   }
 
