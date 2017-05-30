@@ -175,7 +175,9 @@ export default class RadialDendrogramView extends ContrailChartsView {
             linkId: leafs[0].id + '-' + leafs[1].id,
             dataChildren : [d]
           }
-          node.children.push(leafNode)
+          if(node) {
+            node.children.push(leafNode)
+          }
           this.valueSum += leafNode.value
           leafNodes.push(leafNode)
         })
@@ -428,8 +430,11 @@ export default class RadialDendrogramView extends ContrailChartsView {
       // Estimate arc length and wheather the label will fit (default letter width is assumed to be 5px).
       n.arcLength = 6 * (n.y - this.params.arcLabelYOffset) * (n.angleRange[1] - n.angleRange[0]) / 360
       n.label = '' + n.data.namePath[n.data.namePath.length - 1]
-      if(n.depth == 1 && n.data.labelAppend){
+      if(n.depth == 1 && n.data.labelAppend) {
         n.label += '-'+n.data.labelAppend;
+      }
+      if(n.label && n.data.type) {
+        n.label = n.label.replace(new RegExp('_' + n.data.type + '$'), '')
       }
       let labelArcLengthDiff
       n.labelFits = (labelArcLengthDiff = (this.config.get('arcLabelLetterWidth') * n.label.length - n.arcLength)) < 0
@@ -568,7 +573,7 @@ export default class RadialDendrogramView extends ContrailChartsView {
       svgArcLabelsEnter
         .append('textPath')
         .attr('xlink:href', (d) => '#' + d.data.namePath.join('-'))
-        .attr('class', function (d) { return (d.data.level == 1 ? d.data.type : '')})
+        .attr('class', function (d) { return d.data.type })
       let svgArcLabelsEdit = svgArcLabelsEnter.merge(svgArcLabels).transition().ease(this.config.get('ease')).duration(this.params.duration)
         .attr('x', this.params.arcLabelXOffset)
         .attr('dy', this.params.arcLabelYOffset)
@@ -608,7 +613,7 @@ export default class RadialDendrogramView extends ContrailChartsView {
       const svgArcs = this.d3.selectAll('.arc').data(this.arcs, (d) => d.data.namePath.join('-'))
       svgArcs.enter().append('path')
         .attr('id', (d) => d.data.namePath.join('-'))
-        .attr('class', (d) => 'arc arc-' + d.depth)
+        .attr('class', (d) => 'arc arc-' + d.depth + (d.data.type ? (' '+ d.data.type) : ''))
         .attr('d', arcEnter)
         .merge(svgArcs).transition().ease(this.config.get('ease')).duration(this.params.duration)
         .style('fill', d => this.config.getColor([], this.config.get('levels')[d.depth - 1],d.data))
