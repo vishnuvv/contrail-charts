@@ -109,7 +109,7 @@ export default class RadialDendrogramView extends ContrailChartsView {
       const foundLeafNode = _.find(leafNodes, (leafNode) => {
         let found = false
         //If there already exists a leaf node matching the src & dst
-        if (leafNode.id === leafs[0].id) {
+        if (leafNode.type == 'src' && leafNode.id === leafs[0].id) {
           if (leafNode.otherNode.id === leafs[1].id) {
             found = true
           }
@@ -124,7 +124,7 @@ export default class RadialDendrogramView extends ContrailChartsView {
       const foundDstNode = _.find(leafNodes, (leafNode) => {
         let found = false
         //If there already exists a leaf node matching the src & dst
-        if (leafNode.id === leafs[1].id) {
+        if (leafNode.type == 'dst' && leafNode.id === leafs[1].id) {
           if (leafNode.otherNode.id === leafs[0].id) {
             found = true
           }
@@ -157,7 +157,7 @@ export default class RadialDendrogramView extends ContrailChartsView {
               node = {
                 name: name,
                 labelAppend:currLeaf.labelAppend,
-                type: currLeaf.type,
+                arcType: currLeaf.type,
                 namePath: namePath.slice(0),
                 children: [],
                 level: depth + 1
@@ -170,6 +170,7 @@ export default class RadialDendrogramView extends ContrailChartsView {
           const leafNode = {
             id: leaf.id,
             otherNode: (i === 0) ? leafs[1] : leafs[0],
+            arcType: leaf.type,
             value: leaf.value,
             type: (i === 0) ? 'src' : 'dst',
             linkId: leafs[0].id + '-' + leafs[1].id,
@@ -433,8 +434,8 @@ export default class RadialDendrogramView extends ContrailChartsView {
       if(n.depth == 1 && n.data.labelAppend) {
         n.label += '-'+n.data.labelAppend;
       }
-      if(n.label && n.data.type) {
-        n.label = n.label.replace(new RegExp('_' + n.data.type + '$'), '')
+      if(n.label && n.data.arcType) {
+        n.label = n.label.replace(new RegExp('_' + n.data.arcType + '$'), '')
       }
       let labelArcLengthDiff
       n.labelFits = (labelArcLengthDiff = (this.config.get('arcLabelLetterWidth') * n.label.length - n.arcLength)) < 0
@@ -573,7 +574,7 @@ export default class RadialDendrogramView extends ContrailChartsView {
       svgArcLabelsEnter
         .append('textPath')
         .attr('xlink:href', (d) => '#' + d.data.namePath.join('-'))
-        .attr('class', function (d) { return d.data.type })
+        .attr('class', function (d) { return d.data.arcType })
       let svgArcLabelsEdit = svgArcLabelsEnter.merge(svgArcLabels).transition().ease(this.config.get('ease')).duration(this.params.duration)
         .attr('x', this.params.arcLabelXOffset)
         .attr('dy', this.params.arcLabelYOffset)
@@ -613,7 +614,7 @@ export default class RadialDendrogramView extends ContrailChartsView {
       const svgArcs = this.d3.selectAll('.arc').data(this.arcs, (d) => d.data.namePath.join('-'))
       svgArcs.enter().append('path')
         .attr('id', (d) => d.data.namePath.join('-'))
-        .attr('class', (d) => 'arc arc-' + d.depth + (d.data.type ? (' '+ d.data.type) : ''))
+        .attr('class', (d) => 'arc arc-' + d.depth + (d.data.arcType ? (' '+ d.data.arcType) : ''))
         .attr('d', arcEnter)
         .merge(svgArcs).transition().ease(this.config.get('ease')).duration(this.params.duration)
         .style('fill', d => this.config.getColor([], this.config.get('levels')[d.depth - 1],d.data))
@@ -635,6 +636,9 @@ export default class RadialDendrogramView extends ContrailChartsView {
   }
 
   _onMousemove (d, el) {
+    if(this.config.attributes && this.config.attributes.showArcInfo == 'disable') {
+      return
+    }
     const leaves = d.leaves()
     _.each(this.ribbons, (ribbon) => {
       ribbon.active = (Boolean(_.find(leaves, (leaf) => leaf.data.linkId === ribbon.id))) ? true : ribbon.selected
@@ -655,6 +659,9 @@ export default class RadialDendrogramView extends ContrailChartsView {
   }
 
   _onClickNode (d, el, e) {
+    if(this.config.attributes && this.config.attributes.expandLevels == 'disable') {
+      return
+    }
     /*if (d.depth < this.maxDepth && d.depth === this.params.drillDownLevel) {
       // Expand
       this.config.set('drillDownLevel', this.params.drillDownLevel + 1)
