@@ -170,6 +170,7 @@ export default class RadialDendrogramView extends ContrailChartsView {
           const leafNode = {
             id: leaf.id,
             otherNode: (i === 0) ? leafs[1] : leafs[0],
+            currentNode: (i === 0) ? leafs[0] : leafs[1],
             arcType: leaf.type,
             value: leaf.value,
             type: (i === 0) ? 'src' : 'dst',
@@ -696,6 +697,6 @@ export default class RadialDendrogramView extends ContrailChartsView {
   }
 
   _onMouseoutLink (d, el, e) {
-    actionman.fire('ToggleVisibility', this.config.get('tooltip'), false)
+    actionman.fire('HideComponent', this.config.get('tooltip'))
   }
 }
