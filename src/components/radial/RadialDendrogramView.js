@@ -455,7 +455,7 @@ export default class RadialDendrogramView extends ContrailChartsView {
       let labelArcLengthDiff
       n.labelFits = (labelArcLengthDiff = (this.config.get('arcLabelLetterWidth') * n.label.length - n.arcLength)) < 0
       if(!n.labelFits){
-        n.labelLengthToTrim = labelArcLengthDiff / (this.config.get('arcLabelLetterWidth'))
+        n.labelLengthToTrim = (labelArcLengthDiff + 3 * this.config.get('arcLabelLetterWidth')) / (this.config.get('arcLabelLetterWidth'))
       }
       if (this.config.get('labelFlow') === 'perpendicular') {
         n.labelFits = (n.arcLength > 9) && ((this.config.get('innerRadius') / this.config.get('drillDownLevel')) - this.config.get('arcLabelYOffset') > this.config.get('arcLabelLetterWidth') * n.label.length)
@@ -660,7 +660,13 @@ export default class RadialDendrogramView extends ContrailChartsView {
     })
     this._render()
     const [left, top] = d3Selection.mouse(this._container)
-    actionman.fire('ShowComponent', this.config.get('tooltip'), {left, top}, d.data)
+    if(this.clearArcTootltip) {
+      clearTimeout(this.clearArcTootltip)
+    }
+    this.clearArcTootltip = setTimeout(() => {
+      actionman.fire('ShowComponent', this.config.get('tooltip'), {left, top}, d.data)
+      document.getElementById(this.config.get('tooltip')).style.right = 'auto'
+    }, 300)
   }
 
   _onMouseout (d, el) {
@@ -670,6 +676,9 @@ export default class RadialDendrogramView extends ContrailChartsView {
       }
     })
     this._render()
+    if(this.clearArcTootltip) {
+      clearTimeout(this.clearArcTootltip)
+    }
     actionman.fire('HideComponent', this.config.get('tooltip'))
   }
 
@@ -685,6 +694,9 @@ export default class RadialDendrogramView extends ContrailChartsView {
       this.config.set('drillDownLevel', this.params.drillDownLevel - 1)
     }
     this.config.set('drillDownLevel', this.params.drillDownLevel - 1)*/
+    if(this.clearArcTootltip) {
+      clearTimeout(this.clearArcTootltip)
+    }
     var levels = 2;
     //If clicked on 2nd level arc,collapse to 1st level
     if(d.depth == 2 || d.height == 2)
@@ -705,12 +717,27 @@ export default class RadialDendrogramView extends ContrailChartsView {
 
   _onMousemoveLink (d, el, e) {
     if(this.config.attributes && this.config.attributes.showLinkTooltip){
-    const [left, top] = d3Selection.mouse(this._container)
-    actionman.fire('ShowComponent', this.config.get('tooltip'), {left, top}, d)
+      const [left, top] = d3Selection.mouse(this._container)
+      if(this.clearLinkTooltip) {
+        clearTimeout(this.clearLinkTooltip)
+      }
+      this.clearLinkTooltip = setTimeout(() => {
+        actionman.fire('ShowComponent', this.config.get('tooltip'), {left, top}, d)
+        let tooltipId = document.getElementById(this.config.get('tooltip'))
+        if(left > (this._container.offsetWidth / 2)) {
+          tooltipId.style.right = 0
+          tooltipId.style.left = 'auto'
+        } else {
+          tooltipId.style.right = 'auto'
+        }
+      } , 300)
     }
   }
 
   _onMouseoutLink (d, el, e) {
+    if(this.clearLinkTooltip) {
+      clearTimeout(this.clearLinkTooltip)
+    }
     actionman.fire('HideComponent', this.config.get('tooltip'))
   }
 }
