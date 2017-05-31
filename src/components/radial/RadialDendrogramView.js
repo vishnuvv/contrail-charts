@@ -106,21 +106,23 @@ export default class RadialDendrogramView extends ContrailChartsView {
         return
       }
       // Check if we havent already created a node pair (link) with the same id.
-      const foundLeafNode = _.find(leafNodes, (leafNode) => {
+      const foundSrcNode = _.find(leafNodes, (leafNode) => {
         let found = false
         //If there already exists a leaf node matching the src & dst
+        // if (leafNode.type == 'src' && leafNode.id === leafs[0].id) {
         if (leafNode.type == 'src' && leafNode.id === leafs[0].id) {
           if (leafNode.otherNode.id === leafs[1].id) {
             found = true
           }
         }
-        // if (leafNode.id === leafs[1].id) {
-        //   if (leafNode.otherNode.id === leafs[0].id) {
-        //     found = true
-        //   }
-        // }
+        if (leafNode.type == 'src' && leafNode.id === leafs[1].id) {
+          if (leafNode.otherNode.id === leafs[0].id) {
+            found = true
+          }
+        }
         return found
       })
+      //How to ensure for intra traffic
       const foundDstNode = _.find(leafNodes, (leafNode) => {
         let found = false
         //If there already exists a leaf node matching the src & dst
@@ -129,13 +131,25 @@ export default class RadialDendrogramView extends ContrailChartsView {
             found = true
           }
         }
+        if (leafNode.type == 'dst' && leafNode.id === leafs[0].id) {
+          if (leafNode.otherNode.id === leafs[1].id) {
+            found = true
+          }
+        }
         return found
       })
+      var foundLeafNode = null;
+      if(foundSrcNode != null)
+        foundLeafNode = foundSrcNode;
+      else 
+        foundLeafNode = foundDstNode;
       if (foundLeafNode) {
-        foundLeafNode.dataChildren.push(d);
         foundLeafNode.value += (foundLeafNode.id === leafs[0].id) ? leafs[0].value : leafs[1].value
         foundLeafNode.otherNode.value += (foundLeafNode.otherNode.id === leafs[0].id) ? leafs[0].value : leafs[1].value
         this.valueSum += leafs[0].value + leafs[1].value
+        if(foundSrcNode) {
+            foundSrcNode.dataChildren.push(d);
+        }
         if(foundDstNode) {
             foundDstNode.dataChildren.push(d);
         }
