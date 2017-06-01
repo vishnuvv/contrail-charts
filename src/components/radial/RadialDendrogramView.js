@@ -450,7 +450,7 @@ export default class RadialDendrogramView extends ContrailChartsView {
         n.label += '-'+n.data.labelAppend;
       }
       if(n.label && n.data.arcType) {
-        n.label = n.label.replace(new RegExp('_' + n.data.arcType + '$'), '')
+        n.label = n.label.replace(new RegExp('_' + n.data.arcType, 'g'), '')
       }
       let labelArcLengthDiff
       n.labelFits = (labelArcLengthDiff = (this.config.get('arcLabelLetterWidth') * n.label.length - n.arcLength)) < 0
