@@ -444,7 +444,7 @@ export default class RadialDendrogramView extends ContrailChartsView {
         return
       }
       // Estimate arc length and wheather the label will fit (default letter width is assumed to be 5px).
-      n.arcLength = 6 * (n.y - this.params.arcLabelYOffset) * (n.angleRange[1] - n.angleRange[0]) / 360
+      n.arcLength = 6 * (n.y - this.params.arcLabelYOffset[n.height-1]) * (n.angleRange[1] - n.angleRange[0]) / 360
       n.label = '' + n.data.namePath[n.data.namePath.length - 1]
       if(n.depth == 1 && n.data.labelAppend) {
         n.label += '-'+n.data.labelAppend;
@@ -458,7 +458,7 @@ export default class RadialDendrogramView extends ContrailChartsView {
         n.labelLengthToTrim = (labelArcLengthDiff + 3 * this.config.get('arcLabelLetterWidth')) / (this.config.get('arcLabelLetterWidth'))
       }
       if (this.config.get('labelFlow') === 'perpendicular') {
-        n.labelFits = (n.arcLength > 9) && ((this.config.get('innerRadius') / this.config.get('drillDownLevel')) - this.config.get('arcLabelYOffset') > this.config.get('arcLabelLetterWidth') * n.label.length)
+        n.labelFits = (n.arcLength > 9) && ((this.config.get('innerRadius') / this.config.get('drillDownLevel')) - this.params.arcLabelYOffset[n.height-1] > this.config.get('arcLabelLetterWidth') * n.label.length)
       }
       this.arcs.push(n)
     })
@@ -583,16 +583,16 @@ export default class RadialDendrogramView extends ContrailChartsView {
       // Along Arc
       let svgArcLabels = this.d3.selectAll('.arc-label.along-arc').data(arcLabelsAlongArcData)
       let svgArcLabelsEnter = svgArcLabels.enter().append('text')
-        .attr('class', 'arc-label along-arc')
+        .attr('class', (d) => { return 'arc-label along-arc arc-label-'+d.height })
         .attr('x', this.params.arcLabelXOffset)
-        .attr('dy', this.params.arcLabelYOffset)
+        .attr('dy', (d) => { return this.params.arcLabelYOffset[d.height-1] })
       svgArcLabelsEnter
         .append('textPath')
         .attr('xlink:href', (d) => '#' + d.data.namePath.join('-'))
         .attr('class', function (d) { return d.data.arcType })
       let svgArcLabelsEdit = svgArcLabelsEnter.merge(svgArcLabels).transition().ease(this.config.get('ease')).duration(this.params.duration)
         .attr('x', this.params.arcLabelXOffset)
-        .attr('dy', this.params.arcLabelYOffset)
+        .attr('dy', (d) => { return this.params.arcLabelYOffset[d.height-1] })
       svgArcLabelsEdit.select('textPath')
         .attr('startOffset','24%')
         .text((d) => (this.config.get('showArcLabels') && d.labelFits) ? d.label : (d.label.slice(0,-(d.labelLengthToTrim+3)) + '...'))
@@ -600,15 +600,15 @@ export default class RadialDendrogramView extends ContrailChartsView {
       // Perpendicular
       svgArcLabels = this.d3.selectAll('.arc-label.perpendicular').data(arcLabelsPerpendicularData)
       svgArcLabelsEnter = svgArcLabels.enter().append('text')
-        .attr('class', 'arc-label perpendicular')
+        .attr('class', (d) => { return 'arc-label perpendicular arc-label-'+d.height })
         .merge(svgArcLabels)
         .attr('transform', (d) => {
           let alpha = ((d.angleRange[1] + d.angleRange[0]) / 2) + 90
           if ((d.angleRange[1] + d.angleRange[0]) / 2 < 180) {
             alpha -= 180
           }
-          const x = (d.y + this.params.arcLabelYOffset) * Math.cos((d.angleRange[1] + d.angleRange[0] - 180) * Math.PI / 360) + this.params.arcLabelXOffset
-          const y = (d.y + this.params.arcLabelYOffset) * Math.sin((d.angleRange[1] + d.angleRange[0] - 180) * Math.PI / 360)
+          const x = (d.y + this.params.arcLabelYOffset[d.height-1]) * Math.cos((d.angleRange[1] + d.angleRange[0] - 180) * Math.PI / 360) + this.params.arcLabelXOffset
+          const y = (d.y + this.params.arcLabelYOffset[d.height-1]) * Math.sin((d.angleRange[1] + d.angleRange[0] - 180) * Math.PI / 360)
           return `translate(${x}, ${y}) rotate(${alpha})`
         })
         .style('text-anchor', (d) => ((d.angleRange[1] + d.angleRange[0]) / 2 < 180) ? 'start' : 'end')
@@ -623,15 +623,16 @@ export default class RadialDendrogramView extends ContrailChartsView {
         .endAngle((n) => Math.PI * n.angleRange[1] / 180)
       const arc = d3Shape.arc()
         .innerRadius((n) => n.y)
-        .outerRadius((n) => n.y + this.params.arcWidth)
+        .outerRadius((n) => n.y + this.params.arcWidth[n.height-1])
         .startAngle((n) => Math.PI * n.angleRange[0] / 180)
         .endAngle((n) => Math.PI * n.angleRange[1] / 180)
       const svgArcs = this.d3.selectAll('.arc').data(this.arcs, (d) => d.data.namePath.join('-'))
       svgArcs.enter().append('path')
         .attr('id', (d) => d.data.namePath.join('-'))
-        .attr('class', (d) => 'arc arc-' + d.depth + (d.data.arcType ? (' '+ d.data.arcType) : ''))
         .attr('d', arcEnter)
-        .merge(svgArcs).transition().ease(this.config.get('ease')).duration(this.params.duration)
+        .merge(svgArcs)
+        .attr('class', (d) => 'arc arc-' + d.depth + (d.data.arcType ? (' '+ d.data.arcType) : '') + (d.active ? ' active' : ''))
+        .transition().ease(this.config.get('ease')).duration(this.params.duration)
         .style('fill', d => this.config.getColor([], this.config.get('levels')[d.depth - 1],d.data))
         .attr('d', arc)
       svgArcs.exit().transition().ease(this.config.get('ease')).duration(this.params.duration)
@@ -650,13 +651,16 @@ export default class RadialDendrogramView extends ContrailChartsView {
     this.render()
   }
 
-  _onMousemove (d, el) {
+  _onMousemove (d, el, e) {
     if(this.config.attributes && this.config.attributes.showArcInfo == 'disable') {
       return
     }
     const leaves = d.leaves()
     _.each(this.ribbons, (ribbon) => {
       ribbon.active = (Boolean(_.find(leaves, (leaf) => leaf.data.linkId === ribbon.id))) ? true : ribbon.selected
+    })
+    _.each(this.arcs, (arc) => {
+      arc.active = Boolean(arc.data.namePath && arc.data.namePath.join('-') == e.target.id)
     })
     this._render()
     const [left, top] = d3Selection.mouse(this._container)
@@ -674,6 +678,9 @@ export default class RadialDendrogramView extends ContrailChartsView {
       if(!ribbon.selected) {
         ribbon.active = false
       }
+    })
+    _.each(this.arcs, (arc) => {
+      arc.active = false
     })
     this._render()
     if(this.clearArcTootltip) {
