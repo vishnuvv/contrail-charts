@@ -541,8 +541,8 @@ export default class RadialDendrogramView extends ContrailChartsView {
             var radians = [out1.radians,in1.radians,out2.radians,in2.radians];
             radians.sort();
             //Adding 10% buffer
-            var startWidth = Math.abs(radians[0]-radians[1])*.1,
-              endWidth = Math.abs(radians[2]-radians[3])*.1;
+            var startWidth = Math.abs(radians[0]-radians[1])*.35,
+              endWidth = Math.abs(radians[2]-radians[3])*.35;
             return ribbon({
                 source: {startAngle: radians[0]+startWidth,endAngle:radians[1]-startWidth},
                 target: {startAngle: radians[2]+endWidth,endAngle:radians[3]-endWidth}
@@ -568,11 +568,13 @@ export default class RadialDendrogramView extends ContrailChartsView {
 
           const outerPath = radialLine(d.outerPoints)
           const innerPath = radialLine(d.innerPoints)
+          var endingStitchLargeArc = 0;
+          if(Math.abs(d.innerPoints.slice(-1)[0][0] - d.outerPoints.slice(0,1)[0][0]) > 180) {
+            endingStitchLargeArc = 1;
+          }
           const innerStitch = 'A' + d.outerPoints[0][1] + ' ' + d.outerPoints[0][1] + ' 0 0 0 '
-          const endingStitch = 'A' + d.outerPoints[0][1] + ' ' + d.outerPoints[0][1] + ' 0 0 0 ' +  radialLine([d.outerPoints[0]]).substr(1)
-          // return outerPath
+          const endingStitch = 'A' + d.outerPoints[0][1] + ' ' + d.outerPoints[0][1] + ' 0 ' + endingStitchLargeArc + ' 0 ' +  radialLine([d.outerPoints[0]]).substr(1)
 
-          // return innerPath + outerPath
           return outerPath + innerStitch + innerPath.substr(1) + endingStitch
         })
       svgLinks.exit().remove()
