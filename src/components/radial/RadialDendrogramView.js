@@ -591,7 +591,7 @@ export default class RadialDendrogramView extends ContrailChartsView {
       svgArcLabelsEnter
         .append('textPath')
         .attr('xlink:href', (d) => '#' + d.data.namePath.join('-'))
-        .attr('class', function (d) { return d.data.arcType })
+        .attr('class', function (d) { return d.data.arcType ? d.data.arcType.split(' ')[0] : '' })
       let svgArcLabelsEdit = svgArcLabelsEnter.merge(svgArcLabels).transition().ease(this.config.get('ease')).duration(this.params.duration)
         .attr('x', this.params.arcLabelXOffset)
         .attr('dy', (d) => { return this.params.arcLabelYOffset[d.height-1] })
@@ -633,7 +633,7 @@ export default class RadialDendrogramView extends ContrailChartsView {
         .attr('id', (d) => d.data.namePath.join('-'))
         .attr('d', arcEnter)
         .merge(svgArcs)
-        .attr('class', (d) => 'arc arc-' + d.depth + (d.data.arcType ? (' '+ d.data.arcType) : '') + (d.active ? ' active' : ''))
+        .attr('class', (d) => 'arc arc-' + d.depth + (d.data.arcType ? (' '+ d.data.arcType.split(' ')[0]) : '') + (d.active ? ' active' : ''))
         .transition().ease(this.config.get('ease')).duration(this.params.duration)
         .style('fill', d => this.config.getColor([], this.config.get('levels')[d.depth - 1],d.data))
         .attr('d', arc)
