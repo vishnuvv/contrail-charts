@@ -102,9 +102,9 @@ export default class RadialDendrogramView extends ContrailChartsView {
     _.each(data, (d, index) => {
       // Parsing a data element should return a 2 element array: [source, destination]
       const leafs = hierarchyConfig.parse(d)
-      /*if (leafs[0].value <= 0 || leafs[1].value <= 0) {
+      if (leafs[0].value <= 0 || leafs[1].value <= 0) {
         return
-      }*/
+      }
       // Check if we havent already created a node pair (link) with the same id.
       const foundSrcNode = _.find(leafNodes, (leafNode) => {
         let found = false
