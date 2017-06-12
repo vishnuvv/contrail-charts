@@ -596,8 +596,10 @@ export default class RadialDendrogramView extends ContrailChartsView {
         .attr('x', this.params.arcLabelXOffset)
         .attr('dy', (d) => { return this.params.arcLabelYOffset[d.height-1] })
       svgArcLabelsEdit.select('textPath')
-        .attr('startOffset','24%')
-        .text((d) => (this.config.get('showArcLabels') && d.labelFits) ? d.label : (d.label.slice(0,-(d.labelLengthToTrim+3)) + '...'))
+        .attr('startOffset',function(d) {
+          return d.arcLength / 2
+        })
+        .text((d) => (this.config.get('showArcLabels') && d.labelFits) ? d.label : (d.label.slice(0,-(d.labelLengthToTrim)) + '...'))
       svgArcLabels.exit().remove()
       // Perpendicular
       svgArcLabels = this.d3.selectAll('.arc-label.perpendicular').data(arcLabelsPerpendicularData)
