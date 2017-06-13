@@ -592,7 +592,7 @@ export default class RadialDendrogramView extends ContrailChartsView {
         .append('textPath')
         .attr('xlink:href', (d) => '#' + d.data.namePath.join('-'))
         .attr('class', function (d) { return d.data.arcType ? d.data.arcType.split(' ')[0] : '' })
-      let svgArcLabelsEdit = svgArcLabelsEnter.merge(svgArcLabels).transition().ease(this.config.get('ease')).duration(this.params.duration)
+      let svgArcLabelsEdit = svgArcLabelsEnter.merge(svgArcLabels).transition().ease(this.config.get('ease')).duration(this.params.labelDuration != null ? this.params.labelDuration : this.params.duration)
         .attr('x', this.params.arcLabelXOffset)
         .attr('dy', (d) => { return this.params.arcLabelYOffset[d.height-1] })
       svgArcLabelsEdit.select('textPath')
