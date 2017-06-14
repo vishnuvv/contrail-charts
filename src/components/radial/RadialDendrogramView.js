@@ -415,11 +415,22 @@ export default class RadialDendrogramView extends ContrailChartsView {
           innerPoints.push([n.angleScale(valueStart), n.y])
         }
       }
+      let linkCssClass = ''
+      _.each(this.params.linkCssClasses, function(cssClass) {
+       let linkCssNode = src && src.data && _.find(src.data.dataChildren, function(child) {
+          return child.linkCssClass === cssClass
+        })
+        if(linkCssNode) {
+          linkCssClass = cssClass
+          return
+        }
+      })
       this.ribbons.push({
         outerPoints: outerPoints,
         innerPoints: innerPoints,
         id: src.data.linkId,
-        link: [src,dst]
+        link: [src,dst],
+        linkCssClass: linkCssClass
       })
     })
     if(ribbons) {
@@ -506,7 +517,7 @@ export default class RadialDendrogramView extends ContrailChartsView {
       svgLinks.enter().append('path')
         .attr('class', (d) => 'ribbon' + ((d.active) ? ' active' : ''))
         .merge(svgLinks)// .transition().ease(this.config.get('ease')).duration(this.params.duration)
-        .attr('class', (d) => 'ribbon' + ((d.active) ? ' active' : ''))
+        .attr('class', (d) => 'ribbon' + ((d.active) ? ' active' : '') + (d.linkCssClass ? ' '+d.linkCssClass : ''))
         .classed(this.selectorClass('interactive'), this.config.hasAction('link'))
         .attr('d', (d) => {
           // var lastPoint = d.outerPoints[1];
