@@ -102,9 +102,6 @@ export default class RadialDendrogramView extends ContrailChartsView {
     _.each(data, (d, index) => {
       // Parsing a data element should return a 2 element array: [source, destination]
       const leafs = hierarchyConfig.parse(d)
-      if (leafs[0].value <= 0 || leafs[1].value <= 0) {
-        return
-      }
       // Check if we havent already created a node pair (link) with the same id.
       const foundSrcNode = _.find(leafNodes, (leafNode) => {
         let found = false
@@ -144,13 +141,15 @@ export default class RadialDendrogramView extends ContrailChartsView {
       else 
         foundLeafNode = foundDstNode;
       if (foundLeafNode) {
-        foundLeafNode.value += (foundLeafNode.id === leafs[0].id) ? leafs[0].value : leafs[1].value
-        foundLeafNode.otherNode.value += (foundLeafNode.otherNode.id === leafs[0].id) ? leafs[0].value : leafs[1].value
         this.valueSum += leafs[0].value + leafs[1].value
         if(foundSrcNode) {
+            foundSrcNode.value += foundLeafNode.id === leafs[0].id ? leafs[0].value : leafs[1].value;
+            foundSrcNode.otherNode.value += foundLeafNode.otherNode.id === leafs[0].id ? leafs[0].value : leafs[1].value;
             foundSrcNode.dataChildren.push(d);
         }
         if(foundDstNode) {
+            foundDstNode.value += foundLeafNode.id === leafs[0].id ? leafs[0].value : leafs[1].value;
+            foundDstNode.otherNode.value += foundLeafNode.otherNode.id === leafs[0].id ? leafs[0].value : leafs[1].value;
             foundDstNode.dataChildren.push(d);
         }
       } else {
@@ -205,7 +204,18 @@ export default class RadialDendrogramView extends ContrailChartsView {
 
   _prepareHierarchyRootNode () {
     const valueScale = this.config.get('valueScale').domain([0.01, this.valueSum]).range([0, 360])
-    this.hierarchyRootNode = d3Hierarchy.hierarchy(this.rootNode).sum((d) => valueScale(d.value)).sort((a, b) => b.value - a.value)
+    var zeroDataLinks = 0;
+    this.hierarchyRootNode = d3Hierarchy.hierarchy(this.rootNode).each(function (d) {
+          // Nodes with no children are called leaves which are links in the dendrogram,
+          // if the value of the links is zero we are setting it to 1 such that
+          // zero data links also plotted
+          if (d.data && d.children == null && d.data.value == 0) {
+              d.data.value = 1;
+              zeroDataLinks += 1;
+          }
+    });
+    this.valueSum += zeroDataLinks;
+    this.hierarchyRootNode = this.hierarchyRootNode.sum((d) => valueScale(d.value)).sort((a, b) => b.value - a.value)
     // console.log('hierarchyRootNode: ', this.hierarchyRootNode)
   }
 
@@ -422,7 +432,7 @@ export default class RadialDendrogramView extends ContrailChartsView {
         })
         if(linkCssNode) {
           linkCssClass = cssClass
-          return
+          return false
         }
       })
       this.ribbons.push({
