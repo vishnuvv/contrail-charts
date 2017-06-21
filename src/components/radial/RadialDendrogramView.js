@@ -574,6 +574,20 @@ export default class RadialDendrogramView extends ContrailChartsView {
             });
           }
 
+          if (d.outerPoints.length == 4 && d.innerPoints.length == 4) {
+            var outerPoints = _.map(d.outerPoints, _.clone), innerPoints = _.map(d.innerPoints, _.clone);
+            var percentage = .25;
+            outerPoints[0][0] = outerPoints[0][0] + (Math.abs(outerPoints[0][0] - innerPoints[3][0]) * percentage);
+            outerPoints[1][0] = outerPoints[1][0] + (Math.abs(outerPoints[1][0] - innerPoints[2][0]) * percentage);
+            outerPoints[2][0] = outerPoints[2][0] - (Math.abs(outerPoints[2][0] - innerPoints[1][0]) * percentage);
+            outerPoints[3][0] = outerPoints[3][0] - (Math.abs(outerPoints[3][0] - innerPoints[0][0]) * percentage);
+
+
+            innerPoints[0][0] = innerPoints[0][0] + (Math.abs(outerPoints[0][0] - innerPoints[3][0]) * percentage);
+            innerPoints[1][0] = innerPoints[1][0] + (Math.abs(outerPoints[1][0] - innerPoints[2][0]) * percentage);
+            innerPoints[2][0] = innerPoints[2][0] - (Math.abs(outerPoints[2][0] - innerPoints[1][0]) * percentage);
+            innerPoints[3][0] = innerPoints[3][0] - (Math.abs(outerPoints[3][0] - innerPoints[0][0]) * percentage);
+          }
           //Need to try with simple sample for debugging 
           //Looks causing issues as it's using elliptical arc
           /*
@@ -587,14 +601,14 @@ export default class RadialDendrogramView extends ContrailChartsView {
           });
           */
 
-          const outerPath = radialLine(d.outerPoints)
-          const innerPath = radialLine(d.innerPoints)
+          const outerPath = radialLine(outerPoints)
+          const innerPath = radialLine(innerPoints)
           var endingStitchLargeArc = 0;
-          if(Math.abs(d.innerPoints.slice(-1)[0][0] - d.outerPoints.slice(0,1)[0][0]) > 180) {
+          if(Math.abs(innerPoints.slice(-1)[0][0] - outerPoints.slice(0,1)[0][0]) > 180) {
             endingStitchLargeArc = 1;
           }
-          const innerStitch = 'A' + d.outerPoints[0][1] + ' ' + d.outerPoints[0][1] + ' 0 0 0 '
-          const endingStitch = 'A' + d.outerPoints[0][1] + ' ' + d.outerPoints[0][1] + ' 0 ' + endingStitchLargeArc + ' 0 ' +  radialLine([d.outerPoints[0]]).substr(1)
+          const innerStitch = 'A' + outerPoints[0][1] + ' ' + outerPoints[0][1] + ' 0 0 0 '
+          const endingStitch = 'A' + outerPoints[0][1] + ' ' + outerPoints[0][1] + ' 0 ' + endingStitchLargeArc + ' 0 ' +  radialLine([outerPoints[0]]).substr(1)
 
           return outerPath + innerStitch + innerPath.substr(1) + endingStitch
         })
