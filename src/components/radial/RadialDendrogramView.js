@@ -158,6 +158,7 @@ export default class RadialDendrogramView extends ContrailChartsView {
           let children = this.rootNode.children
           let node = null
           const namePath = []
+          let displayLabels = []
           let currLeaf = leaf
           _.each(leaf.names, (name, depth) => {
             this.maxDepth = Math.max(this.maxDepth, depth + 1)
@@ -165,6 +166,8 @@ export default class RadialDendrogramView extends ContrailChartsView {
               return
             }
             namePath.push(name)
+            if(currLeaf.displayLabels instanceof Array)
+            displayLabels.push(currLeaf.displayLabels[depth])
             node = _.find(children, (child) => child.name === name)
             if (!node) {
               node = {
@@ -172,6 +175,7 @@ export default class RadialDendrogramView extends ContrailChartsView {
                 labelAppend:currLeaf.labelAppend,
                 arcType: currLeaf.type,
                 namePath: namePath.slice(0),
+                displayLabels: displayLabels.slice(0),
                 children: [],
                 level: depth + 1
               }
@@ -203,7 +207,6 @@ export default class RadialDendrogramView extends ContrailChartsView {
   }
 
   _prepareHierarchyRootNode () {
-    const valueScale = this.config.get('valueScale').domain([0.01, this.valueSum]).range([0, 360])
     var zeroDataLinks = 0;
     this.hierarchyRootNode = d3Hierarchy.hierarchy(this.rootNode).each(function (d) {
           // Nodes with no children are called leaves which are links in the dendrogram,
@@ -215,6 +218,7 @@ export default class RadialDendrogramView extends ContrailChartsView {
           }
     });
     this.valueSum += zeroDataLinks;
+    const valueScale = this.config.get('valueScale').domain([0.01, this.valueSum]).range([0, 360])
     this.hierarchyRootNode = this.hierarchyRootNode.sum((d) => valueScale(d.value)).sort((a, b) => b.value - a.value)
     // console.log('hierarchyRootNode: ', this.hierarchyRootNode)
   }
@@ -466,17 +470,15 @@ export default class RadialDendrogramView extends ContrailChartsView {
       }
       // Estimate arc length and wheather the label will fit (default letter width is assumed to be 5px).
       n.arcLength = 6 * (n.y - this.params.arcLabelYOffset[n.height-1]) * (n.angleRange[1] - n.angleRange[0]) / 360
-      n.label = '' + n.data.namePath[n.data.namePath.length - 1]
+      let namePath = (n.data.displayLabels && n.data.displayLabels.length > 0) ? n.data.displayLabels : n.data.namePath
+      n.label = '' + namePath[namePath.length - 1]
       if(n.depth == 1 && n.data.labelAppend) {
         n.label += '-'+n.data.labelAppend;
-      }
-      if(n.label && n.data.arcType) {
-        n.label = n.label.replace(new RegExp('_' + n.data.arcType, 'g'), '')
       }
       let labelArcLengthDiff
       n.labelFits = (labelArcLengthDiff = (this.config.get('arcLabelLetterWidth') * n.label.length - n.arcLength)) < 0
       if(!n.labelFits){
-        n.labelLengthToTrim = (labelArcLengthDiff + 3 * this.config.get('arcLabelLetterWidth')) / (this.config.get('arcLabelLetterWidth'))
+        n.labelLengthToTrim = (labelArcLengthDiff + 4 * this.config.get('arcLabelLetterWidth')) / (this.config.get('arcLabelLetterWidth'))
       }
       if (this.config.get('labelFlow') === 'perpendicular') {
         n.labelFits = (n.arcLength > 9) && ((this.config.get('innerRadius') / this.config.get('drillDownLevel')) - this.params.arcLabelYOffset[n.height-1] > this.config.get('arcLabelLetterWidth') * n.label.length)
@@ -626,7 +628,7 @@ export default class RadialDendrogramView extends ContrailChartsView {
       svgArcLabelsEnter
         .append('textPath')
         .attr('xlink:href', (d) => '#' + d.data.namePath.join('-'))
-        .attr('class', function (d) { return d.data.arcType ? d.data.arcType.split(' ')[0] : '' })
+        .attr('class', function (d) { return d.data.arcType ? d.data.arcType : '' })
       let svgArcLabelsEdit = svgArcLabelsEnter.merge(svgArcLabels).transition().ease(this.config.get('ease')).duration(this.params.labelDuration != null ? this.params.labelDuration : this.params.duration)
         .attr('x', this.params.arcLabelXOffset)
         .attr('dy', (d) => { return this.params.arcLabelYOffset[d.height-1] })
@@ -670,7 +672,7 @@ export default class RadialDendrogramView extends ContrailChartsView {
         .attr('id', (d) => d.data.namePath.join('-'))
         .attr('d', arcEnter)
         .merge(svgArcs)
-        .attr('class', (d) => 'arc arc-' + d.depth + (d.data.arcType ? (' '+ d.data.arcType.split(' ')[0]) : '') + (d.active ? ' active' : ''))
+        .attr('class', (d) => 'arc arc-' + d.depth + (d.data.arcType ? (' '+ d.data.arcType) : '') + (d.active ? ' active' : ''))
         .transition().ease(this.config.get('ease')).duration(this.params.duration)
         .style('fill', d => this.config.getColor([], this.config.get('levels')[d.depth - 1],d.data))
         .attr('d', arc)
