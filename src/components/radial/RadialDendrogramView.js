@@ -22,6 +22,7 @@ export default class RadialDendrogramView extends ContrailChartsView {
      * Let's bind super _onResize to this. Also .bind returns new function ref.
      * we need to store this for successful removal from window event
      */
+    this.d3Selection = d3Selection
     this._onResize = this._onResize.bind(this)
     window.addEventListener('resize', this._onResize)
   }
@@ -43,10 +44,7 @@ export default class RadialDendrogramView extends ContrailChartsView {
       'dblclick node': '_onEvent',
       'dblclick link': '_onEvent',
       'mousemove node': '_onMousemove',
-      'mouseout node': '_onMouseout',
-      'click link': '_onClickLink',
-      'mousemove link': '_onMousemoveLink',
-      'mouseout link': '_onMouseoutLink'
+      'mouseout node': '_onMouseout'
     })
   }
 
@@ -469,7 +467,7 @@ export default class RadialDendrogramView extends ContrailChartsView {
         return
       }
       // Estimate arc length and wheather the label will fit (default letter width is assumed to be 5px).
-      n.arcLength = 6 * (n.y - this.params.arcLabelYOffset[n.height-1]) * (n.angleRange[1] - n.angleRange[0]) / 360
+      n.arcLength = 6 * (n.y - this._checkValueIsArray(this.params.arcLabelYOffset, n.height)) * (n.angleRange[1] - n.angleRange[0]) / 360
       let namePath = (n.data.displayLabels && n.data.displayLabels.length > 0) ? n.data.displayLabels : n.data.namePath
       n.label = '' + namePath[namePath.length - 1]
       if(n.depth == 1 && n.data.labelAppend) {
@@ -481,7 +479,7 @@ export default class RadialDendrogramView extends ContrailChartsView {
         n.labelLengthToTrim = (labelArcLengthDiff + 4 * this.config.get('arcLabelLetterWidth')) / (this.config.get('arcLabelLetterWidth'))
       }
       if (this.config.get('labelFlow') === 'perpendicular') {
-        n.labelFits = (n.arcLength > 9) && ((this.config.get('innerRadius') / this.config.get('drillDownLevel')) - this.params.arcLabelYOffset[n.height-1] > this.config.get('arcLabelLetterWidth') * n.label.length)
+        n.labelFits = (n.arcLength > 9) && ((this.config.get('innerRadius') / this.config.get('drillDownLevel')) - this._checkValueIsArray(this.params.arcLabelYOffset, n.height) > this.config.get('arcLabelLetterWidth') * n.label.length)
       }
       this.arcs.push(n)
     })
@@ -554,13 +552,17 @@ export default class RadialDendrogramView extends ContrailChartsView {
           }*/
           // d.outerPoints.splice(1,0,getMidPoint(d.outerPoints));
           // d.innerPoints.splice(1,0,getMidPoint(d.innerPoints));
-          if(d.outerPoints.length == 2 && d.innerPoints.length == 2) {
-            var out1 = { radians: d.outerPoints[0][0]/180 * Math.PI, radius: d.outerPoints[0][1]},
-                    out2 = { radians: d.outerPoints[1][0]/180 * Math.PI, radius: d.outerPoints[1][1]};
-            var in1 = { radians: d.innerPoints[0][0]/180 * Math.PI, radius: d.innerPoints[0][1]},
-                    in2 = { radians: d.innerPoints[1][0]/180 * Math.PI, radius: d.innerPoints[1][1]};
 
-            var ribbon = d3v4.ribbon().radius(out1.radius);
+          var outerPoints = d.outerPoints
+          var innerPoints = d.innerPoints
+
+          if(outerPoints.length == 2 && innerPoints.length == 2) {
+            var out1 = { radians: outerPoints[0][0]/180 * Math.PI, radius: outerPoints[0][1]},
+                    out2 = { radians: outerPoints[1][0]/180 * Math.PI, radius: outerPoints[1][1]};
+            var in1 = { radians: innerPoints[0][0]/180 * Math.PI, radius: innerPoints[0][1]},
+                    in2 = { radians: innerPoints[1][0]/180 * Math.PI, radius: innerPoints[1][1]};
+
+            var ribbon = (typeof d3v4 != 'undefined' ? d3v4 : d3Chord).ribbon().radius(out1.radius);
             var radians = [out1.radians,in1.radians,out2.radians,in2.radians];
             radians.sort();
             //Adding 10% buffer
@@ -576,8 +578,9 @@ export default class RadialDendrogramView extends ContrailChartsView {
             });
           }
 
-          if (d.outerPoints.length == 4 && d.innerPoints.length == 4) {
-            var outerPoints = _.map(d.outerPoints, _.clone), innerPoints = _.map(d.innerPoints, _.clone);
+          if (outerPoints.length == 4 && innerPoints.length == 4) {
+            outerPoints = _.map(outerPoints, _.clone)
+            innerPoints = _.map(innerPoints, _.clone)
             var percentage = .25;
             outerPoints[0][0] = outerPoints[0][0] + (Math.abs(outerPoints[0][0] - innerPoints[3][0]) * percentage);
             outerPoints[1][0] = outerPoints[1][0] + (Math.abs(outerPoints[1][0] - innerPoints[2][0]) * percentage);
@@ -624,14 +627,14 @@ export default class RadialDendrogramView extends ContrailChartsView {
       let svgArcLabelsEnter = svgArcLabels.enter().append('text')
         .attr('class', (d) => { return 'arc-label along-arc arc-label-'+d.height })
         .attr('x', this.params.arcLabelXOffset)
-        .attr('dy', (d) => { return this.params.arcLabelYOffset[d.height-1] })
+        .attr('dy', (d) => { return this._checkValueIsArray(this.params.arcLabelYOffset, d.height) })
       svgArcLabelsEnter
         .append('textPath')
         .attr('xlink:href', (d) => '#' + d.data.namePath.join('-'))
         .attr('class', function (d) { return d.data.arcType ? d.data.arcType : '' })
       let svgArcLabelsEdit = svgArcLabelsEnter.merge(svgArcLabels).transition().ease(this.config.get('ease')).duration(this.params.labelDuration != null ? this.params.labelDuration : this.params.duration)
         .attr('x', this.params.arcLabelXOffset)
-        .attr('dy', (d) => { return this.params.arcLabelYOffset[d.height-1] })
+        .attr('dy', (d) => { return this._checkValueIsArray(this.params.arcLabelYOffset, d.height) })
       svgArcLabelsEdit.select('textPath')
         .attr('startOffset',function(d) {
           return d.arcLength / 2
@@ -648,8 +651,8 @@ export default class RadialDendrogramView extends ContrailChartsView {
           if ((d.angleRange[1] + d.angleRange[0]) / 2 < 180) {
             alpha -= 180
           }
-          const x = (d.y + this.params.arcLabelYOffset[d.height-1]) * Math.cos((d.angleRange[1] + d.angleRange[0] - 180) * Math.PI / 360) + this.params.arcLabelXOffset
-          const y = (d.y + this.params.arcLabelYOffset[d.height-1]) * Math.sin((d.angleRange[1] + d.angleRange[0] - 180) * Math.PI / 360)
+          const x = (d.y + this._checkValueIsArray(this.params.arcLabelYOffset, d.height)) * Math.cos((d.angleRange[1] + d.angleRange[0] - 180) * Math.PI / 360) + this.params.arcLabelXOffset
+          const y = (d.y + this._checkValueIsArray(this.params.arcLabelYOffset, d.height)) * Math.sin((d.angleRange[1] + d.angleRange[0] - 180) * Math.PI / 360)
           return `translate(${x}, ${y}) rotate(${alpha})`
         })
         .style('text-anchor', (d) => ((d.angleRange[1] + d.angleRange[0]) / 2 < 180) ? 'start' : 'end')
@@ -664,7 +667,7 @@ export default class RadialDendrogramView extends ContrailChartsView {
         .endAngle((n) => Math.PI * n.angleRange[1] / 180)
       const arc = d3Shape.arc()
         .innerRadius((n) => n.y)
-        .outerRadius((n) => n.y + this.params.arcWidth[n.height-1])
+        .outerRadius((n) => n.y + this._checkValueIsArray(this.params.arcWidth, n.height))
         .startAngle((n) => Math.PI * n.angleRange[0] / 180)
         .endAngle((n) => Math.PI * n.angleRange[1] / 180)
       const svgArcs = this.d3.selectAll('.arc').data(this.arcs, (d) => d.data.namePath.join('-'))
@@ -680,6 +683,14 @@ export default class RadialDendrogramView extends ContrailChartsView {
         .attr('d', arcEnter)
         .remove()
     }
+  }
+
+  // Checke value is array and get value based on level height
+  _checkValueIsArray (value, height) {
+    if(_.isArray(value)) {
+      return value[height - 1];
+    }
+    return value;
   }
 
   // Event handlers
@@ -731,61 +742,14 @@ export default class RadialDendrogramView extends ContrailChartsView {
   }
 
   _onClickNode (d, el, e) {
-    if(this.config.attributes && this.config.attributes.expandLevels == 'disable') {
-      return
-    }
-    /*if (d.depth < this.maxDepth && d.depth === this.params.drillDownLevel) {
+    if (d.depth < this.maxDepth && d.depth === this.params.drillDownLevel) {
       // Expand
       this.config.set('drillDownLevel', this.params.drillDownLevel + 1)
     } else if (d.depth < this.params.drillDownLevel) {
       // Collapse
       this.config.set('drillDownLevel', this.params.drillDownLevel - 1)
     }
-    this.config.set('drillDownLevel', this.params.drillDownLevel - 1)*/
-    if(this.clearArcTootltip) {
-      clearTimeout(this.clearArcTootltip)
-    }
-    var levels = 2;
-    //If clicked on 2nd level arc,collapse to 1st level
-    if(d.depth == 2 || d.height == 2)
-        levels = 1;
-    this.config.attributes.updateChart({
-        levels: levels
-    });
     el.classList.remove(this.selectorClass('active'))
     super._onEvent(d, el, e)
-  }
-
-  _onClickLink (d, el, e) {
-    if(this.config.attributes && this.config.attributes.showLinkInfo
-      && typeof this.config.attributes.showLinkInfo == 'function') {
-        this.config.attributes.showLinkInfo(d, el, e,this);
-    }
-  }
-
-  _onMousemoveLink (d, el, e) {
-    if(this.config.attributes && this.config.attributes.showLinkTooltip){
-      const [left, top] = d3Selection.mouse(this._container)
-      if(this.clearLinkTooltip) {
-        clearTimeout(this.clearLinkTooltip)
-      }
-      this.clearLinkTooltip = setTimeout(() => {
-        actionman.fire('ShowComponent', this.config.get('tooltip'), {left, top}, d)
-        let tooltipId = document.getElementById(this.config.get('tooltip'))
-        if(left > (this._container.offsetWidth / 2)) {
-          tooltipId.style.right = 0
-          tooltipId.style.left = 'auto'
-        } else {
-          tooltipId.style.right = 'auto'
-        }
-      } , 300)
-    }
-  }
-
-  _onMouseoutLink (d, el, e) {
-    if(this.clearLinkTooltip) {
-      clearTimeout(this.clearLinkTooltip)
-    }
-    actionman.fire('HideComponent', this.config.get('tooltip'))
   }
 }
