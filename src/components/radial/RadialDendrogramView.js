@@ -229,8 +229,10 @@ export default class RadialDendrogramView extends ContrailChartsView {
       for (i = leafIndex + 1; i < leaves.length; i++) {
         if (leaf.data.linkId === leaves[i].data.linkId) {
           this.links.push(leaf.path(leaves[i]))
+
         }
       }
+      //Loop through links array and mark them as bi-directional/uni-directional
     })
     // console.log('Links: ', this.links)
   }
@@ -627,14 +629,12 @@ export default class RadialDendrogramView extends ContrailChartsView {
       let svgArcLabelsEnter = svgArcLabels.enter().append('text')
         .attr('class', (d) => { return 'arc-label along-arc arc-label-'+d.height })
         .attr('x', this.params.arcLabelXOffset)
-        .attr('dy', (d) => { return this._checkValueIsArray(this.params.arcLabelYOffset, d.height) })
+        .attr("dy", function(d,i) { return ((d.angleRange[0] + d.angleRange[1])/2 > 90 && (d.angleRange[0] + d.angleRange[1])/2 < 270 ? 18 : -11); })
       svgArcLabelsEnter
         .append('textPath')
-        .attr('xlink:href', (d) => '#' + d.data.namePath.join('-'))
+        .attr('xlink:href', (d) => '#' + d.data.namePath.join('-') + '-text')
         .attr('class', function (d) { return d.data.arcType ? d.data.arcType : '' })
       let svgArcLabelsEdit = svgArcLabelsEnter.merge(svgArcLabels).transition().ease(this.config.get('ease')).duration(this.params.labelDuration != null ? this.params.labelDuration : this.params.duration)
-        .attr('x', this.params.arcLabelXOffset)
-        .attr('dy', (d) => { return this._checkValueIsArray(this.params.arcLabelYOffset, d.height) })
       svgArcLabelsEdit.select('textPath')
         .attr('startOffset',function(d) {
           return d.arcLength / 2
@@ -671,14 +671,50 @@ export default class RadialDendrogramView extends ContrailChartsView {
         .startAngle((n) => Math.PI * n.angleRange[0] / 180)
         .endAngle((n) => Math.PI * n.angleRange[1] / 180)
       const svgArcs = this.d3.selectAll('.arc').data(this.arcs, (d) => d.data.namePath.join('-'))
+      d3.selectAll('.hiddenDonutArcs').remove();
       svgArcs.enter().append('path')
         .attr('id', (d) => d.data.namePath.join('-'))
-        .attr('d', arcEnter)
+        // .attr('d', arcEnter)
         .merge(svgArcs)
+        .attr('d', arc)
         .attr('class', (d) => 'arc arc-' + d.depth + (d.data.arcType ? (' '+ d.data.arcType) : '') + (d.active ? ' active' : ''))
         .transition().ease(this.config.get('ease')).duration(this.params.duration)
         .style('fill', d => this.config.getColor([], this.config.get('levels')[d.depth - 1],d.data))
-        .attr('d', arc)
+        .each(function(d,i) {
+            //Search pattern for everything between the start and the first capital L
+            var firstArcSection = /(^.+?)L/;    
+
+            if(d3.select(this).attr("d") == null) {
+                console.info("path is null");
+                return;
+            }
+            //Grab everything up to the first Line statement
+            var newArc = firstArcSection.exec( d3.select(this).attr("d") )[1];
+            //Replace all the comma's so that IE can handle it
+            newArc = newArc.replace(/,/g , " ");
+            
+            //If the end angle lies beyond a quarter of a circle (90 degrees or pi/2) 
+            //flip the end and start position
+            if ((d.angleRange[0] + d.angleRange[1])/2 > 90 && (d.angleRange[0] + d.angleRange[1])/2 < 270) {
+                var startLoc    = /M(.*?)A/,        //Everything between the first capital M and first capital A
+                    middleLoc   = /A(.*?)0 ([01]) 1/,   //Everything between the first capital A and 0 0 1
+                    endLoc      = /0 [01] 1 (.*?)$/;    //Everything between the first 0 0 1 and the end of the string (denoted by $)
+                //Flip the direction of the arc by switching the start en end point (and sweep flag)
+                //of those elements that are below the horizontal line
+                var newStart = endLoc.exec( newArc )[1];
+                var newEnd = startLoc.exec( newArc )[1];
+                var largeArc = middleLoc.exec( newArc )[2];
+                var middleSec = middleLoc.exec( newArc )[1];
+                
+                //Build up the new arc notation, set the sweep-flag to 0
+                newArc = "M" + newStart + "A" + middleSec + "0 " + largeArc + " 0 " + newEnd;
+            }
+            d3.select('svg g').append("path")
+                .attr("class", "hiddenDonutArcs")
+                .attr("id", d.data.namePath.join('-') + '-text')
+                .attr("d", newArc)
+                .style("fill", "none");
+        });
       svgArcs.exit().transition().ease(this.config.get('ease')).duration(this.params.duration)
         .attr('d', arcEnter)
         .remove()
