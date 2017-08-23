@@ -297,7 +297,8 @@ export default class RadialDendrogramView extends ContrailChartsView {
       // Shrink the angle range in order to create padding between nodes.
       n.separationValue = 0
       if (n.depth < this.params.parentSeparationDepthThreshold) {
-        n.separationValue = this.params.parentSeparationShrinkFactor * (maxAngle - minAngle) / 2
+          // To keep consistent gap between the arcs.
+          n.separationValue = this.params.parentSeparationShrinkFactor * 20
       }
       minAngle += n.separationValue
       maxAngle -= n.separationValue
@@ -305,7 +306,10 @@ export default class RadialDendrogramView extends ContrailChartsView {
       n.angleScale = d3Scale.scaleLinear().domain(n.valueRange).range(n.angleRange)
     })
     // Now shrink the parent nodes by the amount of sepration added to children.
-    this.hierarchyRootNode.each((n) => {
+
+    // Commented the parent shrink code because when there are more children
+    // the start and end arcs of children are going beyond the parent arc angle range.
+    /*this.hierarchyRootNode.each((n) => {
       if (!n.parent) {
         return
       }
@@ -316,7 +320,7 @@ export default class RadialDendrogramView extends ContrailChartsView {
       n.angleRange[0] += separationValueOfChildren
       n.angleRange[1] -= separationValueOfChildren
       n.angleScale = d3Scale.scaleLinear().domain(n.valueRange).range(n.angleRange)
-    })
+    })*/
   }
 
   /**
